@@ -11,15 +11,20 @@ output:
 library(tidyverse)
 library(sf)
 library(leaflet)
+library(leaflet.extras)
 
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
 # Create a basic map of New Zealand
-nz_map <- leaflet() %>%
-  addTiles() %>%
-  setView(lng = 173, lat = -41.5, zoom = 5)
+nz_map <- leaflet() |>
+  addTiles() |>
+  setView(
+    lng = 173,
+    lat = -41.5,
+    zoom = 5
+  )
 
 nz_map
 ```
@@ -27,28 +32,108 @@ nz_map
 ```{r}
 # Create New Zealand map dataset
 nz_pop <- data.frame(
-  city = c("Auckland", "Wellington", "Christchurch"),
-  lat = c(-36.848461, -41.276825 , -43.53333),
-  lng = c(174.763336, 174.777969 , 172.63333),
-  population = c(1711000, 440900, 510661)
+  city = c(
+    "Auckland",
+    "Wellington",
+    "Christchurch"
+  ),
+  lat = c(
+    -36.848461,
+    -41.276825,
+    -43.525650
+  ),
+  lng = c(
+    174.763336,
+    174.777969,
+    172.639847
+  ),
+  population = c(
+    1711000,
+    440900,
+    510661
+  )
 )
 
 # Create New Zealand map with makers
 nz_map_pop <- leaflet(nz_pop) |>
   addProviderTiles(providers$CartoDB.Voyager) |>
-  addTiles() |>
-  setView(lng = 173, lat = -41.5, zoom = 5) |>
-  addMarkers(~lng, ~lat, popup = ~paste(city, "<br>Population:", population))
+  setView(
+    lng = 173,
+    lat = -41.5,
+    zoom = 5
+  ) |>
+  addHeatmap(
+    lng = ~lng,
+    lat = ~lat,
+    intensity = ~population
+  ) |>
+  addMarkers(
+    ~lng,
+    ~lat,
+    popup = ~paste(
+      city,
+      "<br>Population:",
+      population
+    )
+  )
 
 nz_map_pop
 ```
 
 
 ```{r}
+# importing the data
+nz_ta <- st_read("nz_ta.geojson")
+nz_territory <- read_csv("nz_territory_2016_population.csv")
 
-```
+
+# Cleaning nz_territory data
+my_territory <- nz_territory |>
+  select(
+    "nz_territory",
+    "2016_population"
+    ) |>
+  rename(
+    TA2016_NAM = nz_territory,
+    population = '2016_population'
+  ) |>
+  drop_na()
+
+# Create a boxplot that shows the distribution of population across territories
+summary(my_territory$population)
+
+# Left join the nz_ta and my_territory data sources
+nz_plot <- nz_ta |>
+  left_join(my_territory, by = "TA2016_NAM")
 
 
-```{r}
+# creating a Black and White plot
+nz_plot <- nz_plot |>
+  ggplot() +
+  geom_sf(aes(fill = log(population))) +
+  theme_void() +
+  scale_fill_viridis_c(option = "plasma") +   
+  labs(
+    title = "Population Distribution Across New Zealand Districts",
+    subtitle = "Choropleth map showing population per district",
+    fill = "Log(Population)",
+    caption = "Data source: nz_ta, nz_territory"
+  ) +
+  theme(
+    text = element_text(family = "Arial", size = 12),
+    plot.background = element_rect(fill = "lightblue", colour = NA),
+    panel.background = element_rect(fill = "lightblue", colour = NA),
+    legend.background = element_rect(fill  = "white", colour = NA),
+    plot.title = element_text(face = "bold", size = 16, hjust = 0.3),
+    plot.subtitle = element_text(size = 12, hjust = -0.1),
+    plot.caption = element_text(size = 6, hjust = 0),
+    legend.position = "right"
+  )
+
+# View plot
+nz_plot
+
+# Save plot as png file
+ggsave("nz_plot.png")
 
 ```
