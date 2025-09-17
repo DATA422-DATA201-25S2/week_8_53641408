@@ -1,0 +1,54 @@
+---
+title: "new_zealand_map"
+author: "Ben Pearce"
+date: "2025-09-17"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(sf)
+library(leaflet)
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Create a basic map of New Zealand
+nz_map <- leaflet() %>%
+  addTiles() %>%
+  setView(lng = 173, lat = -41.5, zoom = 5)
+
+nz_map
+```
+
+```{r}
+# Create New Zealand map dataset
+nz_pop <- data.frame(
+  city = c("Auckland", "Wellington", "Christchurch"),
+  lat = c(-36.848461, -41.276825 , -43.53333),
+  lng = c(174.763336, 174.777969 , 172.63333),
+  population = c(1711000, 440900, 510661)
+)
+
+# Create New Zealand map with makers
+nz_map_pop <- leaflet(nz_pop) |>
+  addProviderTiles(providers$CartoDB.Voyager) |>
+  addTiles() |>
+  setView(lng = 173, lat = -41.5, zoom = 5) |>
+  addMarkers(~lng, ~lat, popup = ~paste(city, "<br>Population:", population))
+
+nz_map_pop
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
